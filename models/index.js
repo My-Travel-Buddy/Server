@@ -2,7 +2,7 @@
 // Lets the rest of the app grab them from here: const { Task } = require('./models')
 
 const db = require('../db');
-const Task = require('./task.model');
+const Trip = require('./Trip');
 
 // ---------- associations ----------
 // When you add a second model, describe how the tables relate here. Example:
@@ -11,5 +11,5 @@ const Task = require('./task.model');
 
 module.exports = {
   db, // exported too so seed.js can sync from one place
-  Task,
+  Trip,
 };
