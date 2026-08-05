@@ -1,4 +1,4 @@
-// Defines the Activity table and its relationship to a Trip.
+// Defines the Activity table 
 const { DataTypes } = require("sequelize");
 const db = require("../db");
 
@@ -35,8 +35,7 @@ const Activity = db.define(
       defaultValue: "Other",
       validate: {
         isIn: {
-            // Sequelize will use the values inside CATEGORY_VALUES as options allowed for the category field.
-          args: [CATEGORY_VALUES],
+          args: [CATEGORY_VALUES],// Checks that the category is one of the allowed values.
           msg: "Invalid activity category",
         },
       },
