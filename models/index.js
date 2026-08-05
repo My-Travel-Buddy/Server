@@ -10,6 +10,7 @@ const Activity = require("./Activity")
 // When you add a second model, describe how the tables relate here. Example:
 //   User.hasMany(Task)     // one user has many tasks
 //   Task.belongsTo(User)   // each task belongs to one user (adds a userId column)
+Trip.hasMany (Activity)
 
 User.hasMany(Trip,{
 
