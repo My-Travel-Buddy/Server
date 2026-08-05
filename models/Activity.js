@@ -35,6 +35,7 @@ const Activity = db.define(
       defaultValue: "Other",
       validate: {
         isIn: {
+            // Sequelize will use the values inside CATEGORY_VALUES as options allowed for the category field.
           args: [CATEGORY_VALUES],
           msg: "Invalid activity category",
         },
