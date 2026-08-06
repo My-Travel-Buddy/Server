@@ -78,16 +78,25 @@ async function seed() {
     {
       text: "Pack passport",
       completed: true,
+      UserId: user1.id,
       TripId: trip1.id,
     },
     {
       text: "Book hotel",
       completed: false,
+      UserId: user1.id,
       TripId: trip1.id,
     },
     {
       text: "Exchange currency",
       completed: false,
+      UserId: user1.id,
+      TripId: trip2.id,
+    },
+    {
+      text: "Download train tickets",
+      completed: false,
+      UserId: user2.id,
       TripId: trip2.id,
     },
   ]);

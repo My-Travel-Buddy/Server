@@ -2,21 +2,27 @@ const { Trip, Checklist, Activity } = require('../models')
 const router = require('express').Router();
 const { requireAuth } = require('../middleware/auth')
 
-router.get('/', requireAuth, async (req, res, next) => {
+router.get('/',  async (req, res, next) => {
     try{
         const trips = await Trip.findAll()
         res.status(200).json(trips)
     }catch(err){
         next(err)
     }
+
 })
 
-router.get('/:id', requireAuth,  async (req, res, next) => {
+router.get('/:id',   async (req, res, next) => {
     try{
         const id = Number(req.params.id)
-        const trip = await Trip.findOne(id, {
-            include: Checklist,
-            include: Activity,
+        const trip = await Trip.findByPk(id, {
+            include:[
+                {
+            model: Checklist,
+            model: Activity,
+                }
+            ]
+            
         })
         res.status(200).json(trip)
     }catch(err){
@@ -24,7 +30,7 @@ router.get('/:id', requireAuth,  async (req, res, next) => {
     }
 })
 
-router.post('/', requireAuth, async (req, res, next) => {
+router.post('/post',  async (req, res, next) => {
     try{
         const {destination, date_Range, budget} = req.body
         const trip = await Trip.create({
@@ -38,7 +44,7 @@ router.post('/', requireAuth, async (req, res, next) => {
     }
 })
 
-router.patch('/:id', requireAuth, async (req, res, next) => {
+router.patch('/:id/edit', async (req, res, next) => {
     try{
         const id = Number(req.params.id);
         const trip = await Trip.findByPk(id)
@@ -54,7 +60,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     }
 })
 
-router.delete('/:id', requireAuth, async (req, res, next) => {
+router.delete('/:id/delete',  async (req, res, next) => {
     try{
         const id = Number(req.params.id);
         const trip = await Trip.findByPk(id);
