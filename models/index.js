@@ -3,9 +3,15 @@
 
 const db = require('../db');
 const Trip = require('./Trip');
+<<<<<<< Updated upstream
 const Checklist = require("./Checklist")
 const User =require("./User")
 const Activity = require("./Activity")
+=======
+const Checklist = require('./checklist');
+const Activity = require('./Activity');
+
+>>>>>>> Stashed changes
 // ---------- associations ----------
 // When you add a second model, describe how the tables relate here. Example:
 //   User.hasMany(Task)     // one user has many tasks
@@ -45,7 +51,10 @@ Checklist.belongsTo(Trip,{
 module.exports = {
   db, // exported too so seed.js can sync from one place
   Trip,
+<<<<<<< Updated upstream
   User,
+=======
+>>>>>>> Stashed changes
   Checklist,
   Activity
 };

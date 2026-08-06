@@ -13,7 +13,9 @@ const cookieParser = require('cookie-parser');
 const { rateLimit } = require('express-rate-limit');
 
 const { db } = require('./models'); // the database connection
-const { taskRouter, authRouter } = require('./routes'); // our routers
+// const { authRouter } = require('./routes'); // our routers
+const { tripsRouter, checklistRouter, activityRouter } = require('./routes');
+
 const { requireAuth } = require('./middleware/auth'); // accepts our JWT or Auth0's
 
 const app = express();
@@ -89,11 +91,13 @@ app.get('/api/protected', requireAuth, (req, res) => {
 //   app.use('/api/posts', postRouter)
 // To make tasks private per user, add requireAuth middleware here:
 //   app.use('/api/tasks', requireAuth, taskRouter)
-app.use('/api/tasks', taskRouter);
 
+app.use('/trips', tripsRouter);
+app.use('/trips', checklistRouter);
+app.use('/trips', activityRouter);
 // Auth routes: signup/login/logout with our own JWT, plus the Auth0 sync.
 // This router applies the right guard to each route, so we just mount it here.
-app.use('/auth', authRouter);
+// app.use('/auth', authRouter);
 
 // ---------- 404 ----------
 // Nothing above matched, so the thing doesn't exist. Send a clear JSON 404.
