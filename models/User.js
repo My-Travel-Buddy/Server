@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
-const User = db.define('user', {
+const db = require('../db')
+const User = db.define('User', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
@@ -7,7 +8,7 @@ const User = db.define('user', {
     allowNull: false,
   },
   // The user's full name. Comes from Auth0 for OAuth users; optional for everyone.
-  username: {
+  name: {
     type: DataTypes.STRING,
     allowNull: true,
   },
@@ -21,7 +22,7 @@ const User = db.define('user', {
   // Required for local signup — it's how you log in. For Auth0 users it comes
   // from a custom claim, which is only present if the Post-Login Action is set
   // up, so the column itself stays nullable.
-email: {
+  email: {
     type: DataTypes.STRING,
     allowNull: true,
     unique: true,
