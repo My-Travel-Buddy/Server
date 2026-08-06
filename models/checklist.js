@@ -13,6 +13,10 @@ const Checklist = db.define('Checklist', {
     allowNull: false,
     defaultValue: false, // a new task starts as "not done"
   },
+   UserId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+  }
 });
 
 module.exports = Checklist;

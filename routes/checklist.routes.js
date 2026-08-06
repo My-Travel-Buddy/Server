@@ -5,12 +5,36 @@ const {requireAuth} = require("../middleware/auth")
 
 
 
-router.get("/:tripId/checklist", requireAuth, async(req,res, next) =>{
+router.get("/:TripId/checklist",  async(req,res, next) =>{
 
     try {
     const checklist = await Checklist.findAll({
       where: {
-        userId: req.user.id
+        UserId: "3bb7929c-d0d6-431d-9726-cde82fbf502e", ///change later
+         TripId: req.params.TripId,
+      }
+      });
+
+  
+    if (!checklist) {
+         
+      return res.sendStatus(404);
+     
+    }
+   
+    res.json(checklist);
+  } catch (err) {
+    next(err);
+  }
+
+} )
+
+router.get("/:tripId/checklist/:id",  async (req, res, next) =>{
+   try {
+    const checklist = await Checklist.findByPk({
+      where: {
+        // UserId: "3bb7929c-d0d6-431d-9726-cde82fbf502e",
+         TripId: req.params.TripId,
       }
       });
 
@@ -24,14 +48,9 @@ router.get("/:tripId/checklist", requireAuth, async(req,res, next) =>{
   } catch (err) {
     next(err);
   }
-
 } )
 
-router.get("/:tripId/checklist/:id", requireAuth, async (req, res) =>{
-
-} )
-
-router.post("/:tripId/checklist", requireAuth, async (req, res) =>{
+router.post("/:tripId/checklist",  async (req, res) =>{
 try {
 
     const { gameReviewId } = req.body;
@@ -50,12 +69,12 @@ try {
 } ) 
 
 
-router.patch("/:tripId/checklist/:id", requireAuth, async (req, res) =>{
+router.patch("/:tripId/checklist/:id",  async (req, res) =>{
 
 } ) 
 
 
-router.delete(":tripId/checklist/id", requireAuth, async (req, res) =>{
+router.delete(":tripId/checklist/id",  async (req, res) =>{
 
 } ) 
 
