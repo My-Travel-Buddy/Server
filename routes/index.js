@@ -6,7 +6,6 @@ const checklistRouter = require('./checklist.routes');
 const activityRouter = require('./activities');
 // Add a new resource? Import its router above and add one line here.
 module.exports = {
-  taskRouter,
   tripsRouter,
   checklistRouter,
   activityRouter

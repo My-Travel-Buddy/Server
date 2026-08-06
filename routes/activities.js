@@ -6,7 +6,7 @@ router.get("/:tripId/activities",async(req, res) =>{
     const tripId = req.params.tripId;
     const activities = await Activity.findAll({
         where: {
-            tripId = tripId
+            tripId: tripId
             }
         }
     );
