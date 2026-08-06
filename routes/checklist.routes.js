@@ -58,3 +58,5 @@ router.patch("/:tripId/checklist/:id", requireAuth, async (req, res) =>{
 router.delete(":tripId/checklist/id", requireAuth, async (req, res) =>{
 
 } ) 
+
+module.exports = router

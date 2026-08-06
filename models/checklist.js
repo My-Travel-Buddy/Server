@@ -3,7 +3,7 @@ const db = require('../db');
 
 // db.define(tableName, columns)
 // Sequelize adds id, createdAt and updatedAt columns for you automatically.
-const Checklist = db.define('checklist', {
+const Checklist = db.define('Checklist', {
   tridId:{
     type: DataTypes.UUID,
     allowNull: false,

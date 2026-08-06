@@ -1,7 +1,6 @@
 const express = require ('express');
-const Activity  = require ('../models');
+const { Activity }  = require ('../models');
 const router = express.Router();
-
 
 router.get("/:tripId/activities",async(req, res) =>{
     const tripId = req.params.tripId;
@@ -39,3 +38,5 @@ router.get("/:tripId/activities/:activityId",async(req, res) =>{
     await activity.destroy(req.body)
     res.sendStatus(204)
   })
+
+  module.exports = router
