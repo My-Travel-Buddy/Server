@@ -71,7 +71,7 @@ const Activity = db.define(
     },
   },
   {
-    tableName: "activities",
+    tableName: "Activities",
   },
 );
 
