@@ -89,7 +89,7 @@ app.get('/api/protected', requireAuth, (req, res) => {
 //   app.use('/api/posts', postRouter)
 // To make tasks private per user, add requireAuth middleware here:
 //   app.use('/api/tasks', requireAuth, taskRouter)
-app.use("/api/ai", AIRouter);
+app.use("/trips", AIRouter);
 app.use('/trips', tripsRouter);
 app.use('/trips', checklistRouter);
 app.use('/trips', activityRouter);
