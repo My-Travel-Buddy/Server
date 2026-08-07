@@ -11,15 +11,15 @@ const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const { rateLimit } = require('express-rate-limit');
-
-const { db } = require('./models'); // the database connection
+const aiRouter = require("./routes/ai.routes");
+const { db } = require('./models');
 const { tripsRouter, checklistRouter, activityRouter, authRouter } = require('./routes');
-
-const { requireAuth } = require('./middleware/auth'); // accepts our JWT or Auth0's
+const { requireAuth } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONTEND_URL =
+  process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // Deployed apps sit behind a proxy (Render, ...). This tells Express
 // to trust it, so rate-limiting sees the real visitor IP and secure cookies work.
@@ -90,13 +90,15 @@ app.get('/api/protected', requireAuth, (req, res) => {
 //   app.use('/api/posts', postRouter)
 // To make tasks private per user, add requireAuth middleware here:
 //   app.use('/api/tasks', requireAuth, taskRouter)
-
+app.use("/api/ai", aiRouter);
 app.use('/trips', tripsRouter);
 app.use('/trips', checklistRouter);
 app.use('/trips', activityRouter);
 // Auth routes: signup/login/logout with our own JWT, plus the Auth0 sync.
 // This router applies the right guard to each route, so we just mount it here.
 // app.use('/auth', authRouter);
+
+
 
 // ---------- 404 ----------
 // Nothing above matched, so the thing doesn't exist. Send a clear JSON 404.
