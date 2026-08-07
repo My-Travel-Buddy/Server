@@ -4,9 +4,11 @@
 const tripsRouter = require('./trips');
 const checklistRouter = require('./checklist.routes');
 const activityRouter = require('./activities');
+const AIRouter = require('./ai.routes');
 // Add a new resource? Import its router above and add one line here.
 module.exports = {
   tripsRouter,
   checklistRouter,
-  activityRouter
+  activityRouter,
+  AIRouter,
 };
