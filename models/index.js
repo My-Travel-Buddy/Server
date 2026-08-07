@@ -35,10 +35,13 @@ Checklist.belongsTo(Trip,{
 
 })
 
+const User_Trip = db.models.User_Trip
+
 module.exports = {
   db, // exported too so seed.js can sync from one place
   Trip,
   User,
   Checklist,
-  Activity
+  Activity,
+  User_Trip
 };
