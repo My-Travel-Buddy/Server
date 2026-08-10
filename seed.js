@@ -28,13 +28,13 @@ async function seed() {
   const trip1 = await Trip.create({
     destination: "Tokyo",
     date_Range: ["2027-01-10", "2027-01-20"],
-    budget: [1000, 2500],
+    budget: [2500],
   });
 
   const trip2 = await Trip.create({
     destination: "Paris",
     date_Range: ["2027-05-01", "2027-05-10"],
-    budget: [1500, 3000],
+    budget: [3000],
   });
 
   // ---------------- USER_TRIP ----------------
