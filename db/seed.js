@@ -1,6 +1,6 @@
 require("dotenv").config();
 
-const { db, User, Trip, Activity, Checklist } = require("./models");
+const { db, User, Trip, Activity, Checklist } = require("../models");
 
 async function seed() {
   await db.sync({ force: true });

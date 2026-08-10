@@ -164,5 +164,4 @@ const startServer = async () => {
     process.exit(1); // stop the process so the problem is obvious
   }
 };
-
 startServer();
