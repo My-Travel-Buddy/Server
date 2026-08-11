@@ -15,13 +15,7 @@ const ai = new GoogleGenAI({
 // This route receives trip information from the frontend
 // and asks Gemini to generate an itinerary.
 router.post("/itinerary", async (req, res) => {
-  const {
-    destination,
-    startDate,
-    endDate,
-    budget,
-    interests,
-  } = req.body;
+  const { destination, startDate, endDate, budget, interests } = req.body;
 
   // Make sure the required trip information was sent.
   if (!destination || !startDate || !endDate) {
