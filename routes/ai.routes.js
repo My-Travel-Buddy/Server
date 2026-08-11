@@ -30,6 +30,9 @@ const itinerarySchema = {
           title: {
             type: Type.STRING,
           },
+          day:{
+            type:Type.STRING,
+          },
 
           category: {
             type: Type.STRING,
