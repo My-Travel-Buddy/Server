@@ -22,13 +22,17 @@ const itinerarySchema = {
 
     activities: {
       type: Type.ARRAY,
-
+      description: "A chronological list of exactly 3 distinct main activities planned for each day of the trip. Use start and end dates to determine how many days are in the trip. Exclude the final day.",
       items: {
         type: Type.OBJECT,
 
         properties: {
           title: {
             type: Type.STRING,
+          },
+          dateTime:{
+            type:Type.STRING,
+            description: "The event date and time in ISO 8601 format (YYYY-MM-DDTHH:mm:ssZ)" 
           },
 
           category: {
@@ -48,10 +52,17 @@ const itinerarySchema = {
         required: ["title", "category", "estimatedCost", "notes"],
       },
     },
+    checklist: {
+      type: Type.ARRAY,
+      items:{
+        type:Type.STRING
+      }
+
+    }
   },
 
   // Gemini needs to return both parts of the itinerary.
-  required: ["summary", "activities"],
+  required: ["summary", "activities", "checklist"],
 };
 
 // we got the Gemini API key from the server.
