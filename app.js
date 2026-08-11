@@ -12,7 +12,7 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const { rateLimit } = require('express-rate-limit');
 const { db } = require('./models');
-const { tripsRouter, checklistRouter, activityRouter, authRouter, AIRouter } = require('./routes');
+const { tripsRouter, checklistRouter, activityRouter, authRouter, AIRouter, visaRouter } = require('./routes');
 const { requireAuth } = require('./middleware/auth');
 
 const app = express();
@@ -89,10 +89,11 @@ app.get('/api/protected', requireAuth, (req, res) => {
 //   app.use('/api/posts', postRouter)
 // To make tasks private per user, add requireAuth middleware here:
 //   app.use('/api/tasks', requireAuth, taskRouter)
-app.use("/api/ai", AIRouter);
+app.use("/trips", AIRouter);
 app.use('/trips', tripsRouter);
 app.use('/trips', checklistRouter);
 app.use('/trips', activityRouter);
+app.use('/trips', visaRouter)
 // Auth routes: signup/login/logout with our own JWT, plus the Auth0 sync.
 // This router applies the right guard to each route, so we just mount it here.
 // app.use('/auth', authRouter);
