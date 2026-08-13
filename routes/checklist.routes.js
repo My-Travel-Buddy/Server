@@ -4,43 +4,43 @@ const Checklist = require("../models/Checklist");
 const { requireAuth } = require("../middleware/auth");
 const { Trip } = require("../models");
 
-// router.get("/:TripId/checklist", async (req, res, next) => {
-//   try {
-//     const checklist = await Checklist.findAll({
-//       where: {
-//         UserId: "2b9aca3b-ef2e-4696-9497-c8904557643b", ///change later
-//         TripId: req.params.TripId,
-//       },
-//     });
+router.get("/:TripId/checklist", async (req, res, next) => {
+  try {
+    const checklist = await Checklist.findAll({
+      where: {
+        UserId: "2b9aca3b-ef2e-4696-9497-c8904557643b", ///change later
+        TripId: req.params.TripId,
+      },
+    });
 
-//     if (!checklist) {
-//       return res.sendStatus(404);
-//     }
+    if (!checklist) {
+      return res.sendStatus(404);
+    }
 
-//     res.json(checklist);
-//   } catch (err) {
-//     next(err);
-//   }
-// });
+    res.json(checklist);
+  } catch (err) {
+    next(err);
+  }
+});
 
-// router.get("/:tripId/checklist/:id",  async (req, res, next) =>{
-//    try {
-//     const checklist = await Checklist.findOne({
-//       where: {
-//         // UserId: "3bb7929c-d0d6-431d-9726-cde82fbf502e",
-//          TripId: req.params.TripId,
-//       }
-//       });
+router.get("/:tripId/checklist/:id",  async (req, res, next) =>{
+   try {
+    const checklist = await Checklist.findOne({
+      where: {
+        // UserId: "3bb7929c-d0d6-431d-9726-cde82fbf502e",
+         TripId: req.params.TripId,
+      }
+      });
 
-//     if (!checklist) {
-//       return res.sendStatus(404);
-//     }
+    if (!checklist) {
+      return res.sendStatus(404);
+    }
 
-//     res.json(checklist);
-//   } catch (err) {
-//     next(err);
-//   }
-// } )
+    res.json(checklist);
+  } catch (err) {
+    next(err);
+  }
+} )
 
 router.post("/:tripId/checklist/post", async (req, res) => {
   try {
