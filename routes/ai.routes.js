@@ -11,6 +11,18 @@ const { GoogleGenAI } = require("@google/genai");
 // We import the JSON structure Gemini needs to follow.
 const { Type } = require("@google/genai");
 
+// Allowed activity categories.
+const CATEGORY_VALUES = [
+  "Food",
+  "Sightseeing",
+  "Culture",
+  "Adventure",
+  "Shopping",
+  "Transportation",
+  "Entertainment",
+  "Other",
+];
+
 // expected output from Gemini
 const itinerarySchema = {
   type: Type.OBJECT,
@@ -22,7 +34,9 @@ const itinerarySchema = {
 
     activities: {
       type: Type.ARRAY,
-      description: "A chronological list of exactly 3 distinct main activities planned for each day of the trip. Use start and end dates to determine how many days are in the trip. Exclude the final day.",
+      description:
+        "A chronological list of exactly 3 distinct main activities planned for each day of the trip. Use start and end dates to determine how many days are in the trip. Exclude the final day.",
+
       items: {
         type: Type.OBJECT,
 
@@ -30,13 +44,16 @@ const itinerarySchema = {
           title: {
             type: Type.STRING,
           },
-          dateTime:{
-            type:Type.STRING,
-            description: "The event date and time in ISO 8601 format (YYYY-MM-DDTHH:mm:ssZ)" 
+
+          dateTime: {
+            type: Type.STRING,
+            description:
+              "The event date and time in ISO 8601 format (YYYY-MM-DDTHH:mm:ssZ)",
           },
 
           category: {
             type: Type.STRING,
+            enum: CATEGORY_VALUES,
           },
 
           estimatedCost: {
@@ -49,16 +66,17 @@ const itinerarySchema = {
         },
 
         // Every activity needs these fields.
-        required: ["title", "category", "estimatedCost", "notes"],
+        required: ["title", "dateTime", "category", "estimatedCost", "notes"],
       },
     },
+
     checklist: {
       type: Type.ARRAY,
-      items:{
-        type:Type.STRING
-      }
 
-    }
+      items: {
+        type: Type.STRING,
+      },
+    },
   },
 
   // Gemini needs to return both parts of the itinerary.
