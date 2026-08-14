@@ -30,6 +30,8 @@ const itinerarySchema = {
   properties: {
     summary: {
       type: Type.STRING,
+       description:
+        "A overview paragraph of the trip. What will happen on the trip base on the activities plus the amount of days cities visited and the estimated budget or cost"
     },
 
     activities: {
