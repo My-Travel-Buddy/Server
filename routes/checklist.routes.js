@@ -42,9 +42,9 @@ router.get("/:tripId/checklist/:id",  async (req, res, next) =>{
   }
 } )
 
-router.post("/:tripId/checklist/post", async (req, res) => {
+router.post("/:tripId/checklist/post", async (req, res, next) => {
   try {
-    const { text, completed, UserId, TripId } = req.body;
+    const { text, completed } = req.body;
     const checklist = await Checklist.create({
       text,
       completed,
@@ -57,7 +57,7 @@ router.post("/:tripId/checklist/post", async (req, res) => {
   }
 });
 
-router.patch("/:tripId/:id/checklist/edit", async (req, res) => {
+router.patch("/:tripId/:id/checklist/edit", async (req, res, next) => {
 
   try {
     const fixChecklist = await Checklist.findByPk(req.params.id);
@@ -79,7 +79,7 @@ router.patch("/:tripId/:id/checklist/edit", async (req, res) => {
 
 });
 
-router.delete("/:id/checklist/delete", async (req, res) => {
+router.delete("/:id/checklist/delete", async (req, res, next) => {
    try {
     const checklist = await Checklist.findByPk(req.params.id);
 

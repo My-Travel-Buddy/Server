@@ -74,7 +74,18 @@ const itinerarySchema = {
       type: Type.ARRAY,
 
       items: {
-        type: Type.STRING,
+        type: Type.OBJECT,
+
+        properties: {
+          text: {
+            type: Type.STRING,
+          },
+
+          completed: {
+            type: Type.BOOLEAN,
+          },
+        },
+        required: ["text", "completed"],
       },
     },
   },
