@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
+const { requireAuth } = require("../middleware/auth");
 
 // This route receives the passport country code
 // and destination country code from the frontend.
-router.post("/visa", async (req, res) => {
+router.post("/visa", requireAuth, async (req, res) => {
   const { passportCode, destinationCode } = req.body;
 
   // Read the Visa API key from .env.
