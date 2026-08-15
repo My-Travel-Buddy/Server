@@ -28,29 +28,41 @@ const itinerarySchema = {
   type: Type.OBJECT,
 
   properties: {
+    title: {
+      type: Type.STRING,
+    },
+
+    destination: {
+      type: Type.STRING,
+    },
+
     summary: {
       type: Type.STRING,
-       description:
-        "A overview paragraph of the trip. What will happen on the trip base on the activities plus the amount of days cities visited and the estimated budget or cost"
+      description:
+        "A short overview of the trip, including the number of days, activities, and estimated cost.",
     },
 
     activities: {
       type: Type.ARRAY,
       description:
-        "A chronological list of exactly 3 distinct main activities planned for each day of the trip. Use start and end dates to determine how many days are in the trip. Exclude the final day.",
+        "Create exactly 3 activities for each day, excluding the final travel day.",
 
       items: {
         type: Type.OBJECT,
 
         properties: {
+          day: {
+            type: Type.INTEGER,
+            description: "The trip day number, starting with 1.",
+          },
+
           title: {
             type: Type.STRING,
           },
 
           dateTime: {
             type: Type.STRING,
-            description:
-              "The event date and time in ISO 8601 format (YYYY-MM-DDTHH:mm:ssZ)",
+            description: "The activity date and time in ISO 8601 format.",
           },
 
           category: {
@@ -67,13 +79,20 @@ const itinerarySchema = {
           },
         },
 
-        // Every activity needs these fields.
-        required: ["title", "dateTime", "category", "estimatedCost", "notes"],
+        required: [
+          "day",
+          "title",
+          "dateTime",
+          "category",
+          "estimatedCost",
+          "notes",
+        ],
       },
     },
 
     checklist: {
       type: Type.ARRAY,
+      description: "A practical checklist for the trip.",
 
       items: {
         type: Type.OBJECT,
@@ -87,13 +106,13 @@ const itinerarySchema = {
             type: Type.BOOLEAN,
           },
         },
+
         required: ["text", "completed"],
       },
     },
   },
-
   // Gemini needs to return both parts of the itinerary.
-  required: ["summary", "activities", "checklist"],
+  required: ["title", "destination", "summary", "activities", "checklist"],
 };
 
 // we got the Gemini API key from the server.
@@ -139,9 +158,25 @@ router.post("/itinerary", async (req, res) => {
 
     if (!response.text) {
       throw new Error("Gemini returned an empty response.");
-    } else {
-      return res.json(JSON.parse(response.text));
     }
+
+    const itinerary = JSON.parse(response.text);
+
+    // Gemini can hand back either plain strings or objects, so we normalize
+    // every item to { text, completed } and drop anything without real text.
+    itinerary.checklist = (itinerary.checklist || [])
+      .map((item) => {
+        const text = typeof item === "string" ? item : item?.text;
+
+        return {
+          text: typeof text === "string" ? text.trim() : "",
+          completed: false,
+        };
+      })
+      .filter((item) => item.text.length > 0);
+
+    return res.json(itinerary);
+
 
     // We send the generated itinerary back as JSON.
   } catch (error) {
