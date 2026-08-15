@@ -1,8 +1,13 @@
 main {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   font-family:
-    'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',
-    'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    "Lucida Sans",
+    "Lucida Sans Regular",
+    "Lucida Grande",
+    "Lucida Sans Unicode",
+    Geneva,
+    Verdana,
+    sans-serif;
 }
 
 code {
@@ -13,7 +18,8 @@ code {
 
 .public-path {
   background-color: lavenderblush;
-  border: 1px dotted yellow;
+  border: 1px dotted #d4a800;
+  padding: 10px;
 }
 
 ul {
@@ -27,12 +33,21 @@ li > ul {
 }
 
 footer {
+  display: inline-block;
+  padding: 8px 24px;
+
   background-color: salmon;
   color: darkslategray;
-  display: inline-block;
-  padding: 0px 50px;
-  font-weight: 800;
+
   font-family:
-    Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  font-size: larger;
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Open Sans",
+    "Helvetica Neue",
+    sans-serif;
+
+  font-size: 1rem;
+  font-weight: 800;
 }
