@@ -2,7 +2,9 @@
 
 My Travel Buddy is a Node.js and Express backend that connects to PostgreSQL through Sequelize.
 
-The server handles user authentication, saved trips, activities, checklist items, AI-generated itineraries using Gemini, and visa requirement requests.
+The server handles user authentication, saved trips, activities, checklist items, AI-generated itineraries using Gemini, and visa requirement lookups.
+
+Requires **Node 20 or newer**.
 
 ## Getting Started
 
@@ -12,13 +14,13 @@ Install the dependencies:
 npm install
 ```
 
-Create your local database:
+Create your local database. The name must match the one in `DATABASE_URL`:
 
 ```bash
-createdb capstone_dev
+createdb travel_buddy
 ```
 
-Create your `.env` file:
+Create your `.env` file and fill in the values:
 
 ```bash
 cp .env.example .env
@@ -36,7 +38,7 @@ The server runs locally on:
 http://localhost:8080
 ```
 
-You should see messages similar to:
+You should see:
 
 ```text
 🐘 Database connection established.
@@ -44,82 +46,135 @@ You should see messages similar to:
 🚀 Server is running on PORT: 8080
 ```
 
+Tables are created automatically on boot — `app.js` calls `db.sync()`, which
+adds any missing tables without touching existing data. You do not need to seed
+to get started.
+
+Health check: <http://localhost:8080/check>
+
 ## Environment Variables
 
-Configure the required environment variables in your `.env` file.
+Copy `.env.example` and fill it in. **Five variables are required at boot** —
+the server throws and refuses to start without them.
 
-```env
-PORT=8080
-DATABASE_URL=
-FRONTEND_URL=http://localhost:5173
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `JWT_SECRET` | **yes** | Signs the login cookie. Changing it logs everyone out. |
+| `AUTH0_DOMAIN` | **yes** | Auth0 tenant, no `https://`. |
+| `AUTH0_AUDIENCE` | **yes** | Auth0 API identifier. Must match the frontend's `VITE_AUTH0_AUDIENCE` byte for byte, or login appears to work and every API call then returns 401. |
+| `MY_TRAVEL_BUDDY` | **yes** | Google Gemini API key. |
+| `FRONTEND_URL` | **yes in practice** | The single origin CORS allows. Defaults to `http://localhost:5173`. A mismatch makes every request fail with "Failed to fetch". |
+| `DATABASE_URL` | no | Postgres connection string. Falls back to a local database (see `db/index.js`). |
+| `NODE_ENV` | no locally, **yes in production** | See Deployment — it controls both the auth cookie and database SSL. |
+| `PORT` | no | Defaults to `8080`. |
+| `JWT_EXPIRES_IN` | no | Cookie lifetime. Defaults to `7d`. |
+| `AUTH0_CLAIMS_NAMESPACE` | no | Namespace for custom Auth0 claims. |
+| `GEMINI_MODEL` | no | Defaults to `gemini-3.1-flash-lite`. |
+| `MAX_ITINERARY_DAYS` | no | How many days one itinerary request plans. Defaults to `14`. |
+| `VISA_API` | no | RapidAPI key for visa lookups. Without it, visa routes return 503. |
 
-MY_TRAVEL_BUDDY=
-GEMINI_MODEL=
-
-VISA_API=
-
-JWT_SECRET=
-```
-
-Use the exact values and variable names required by your local environment.
+Never commit `.env`. Commit `.env.example` instead.
 
 ## Tech Stack
 
-* Node.js
-* Express.js
-* PostgreSQL
-* Sequelize
-* bcrypt
-* JSON Web Tokens
-* Gemini API
-* Travel Buddy Visa API
+* Node.js / Express
+* PostgreSQL / Sequelize
+* bcrypt (password hashing)
+* JSON Web Tokens (httpOnly cookie)
+* Auth0 (social login)
+* Google Gemini (`@google/genai`)
+* RapidAPI `visa-requirement` (visa data)
 
 ## Project Structure
 
 ```text
-app.js
+app.js                    middleware, CORS, route mounting, server start
+
 db/
-  index.js
+  index.js                Sequelize connection
+  seed.js                 sample data — DROPS all tables
 
 models/
-  index.js
-  user.model.js
-  trip.model.js
-  activity.model.js
-  checklist.model.js
+  index.js                associations
+  User.js
+  Trip.js
+  Activity.js
+  checklist.js
 
 routes/
+  index.js                collects the routers
   auth.routes.js
-  trips.routes.js
-  activity.routes.js
+  trips.js
+  activities.js
   checklist.routes.js
   ai.routes.js
-  visa.routes.js
+  visa.js
 
 middleware/
-  requireAuth.js
+  auth.js                 exports requireAuth
 ```
 
-## Main API Routes
+## API Routes
 
-| Method | Path                                    | Purpose                           |
-| ------ | --------------------------------------- | --------------------------------- |
-| POST   | `/auth/signup`                          | Create a user account             |
-| POST   | `/auth/login`                           | Log in                            |
-| GET    | `/auth/me`                              | Get the currently logged-in user  |
-| GET    | `/trips`                                | Get saved trips                   |
-| POST   | `/trips`                                | Create a trip                     |
-| GET    | `/trips/:id`                            | Get one trip                      |
-| POST   | `/trips/:id/activities`                 | Add an activity to a trip         |
-| DELETE | `/trips/:tripId/activities/:activityId` | Delete an activity                |
-| POST   | `/trips/itinerary`                      | Generate an itinerary with Gemini |
-| POST   | `/trips/visa`                           | Check visa requirements           |
+All `/trips` routes require authentication.
+
+### Auth — `/auth`
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/auth/signup` | Create an account |
+| POST | `/auth/login` | Log in |
+| POST | `/auth/logout` | Clear the cookie |
+| POST | `/auth/auth0` | Sync an Auth0 user into our database |
+| GET | `/auth/me` | The currently logged-in user |
+
+### Trips — `/trips`
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/trips` | All trips for the logged-in user |
+| GET | `/trips/:id` | One trip, with activities and checklist |
+| POST | `/trips/post` | Create a trip |
+| PATCH | `/trips/:id/edit` | Update a trip |
+| DELETE | `/trips/:id/delete` | Delete a trip and its children |
+
+### Activities
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/trips/:tripId/activities` | Activities for a trip |
+| GET | `/trips/:tripId/activities/:activityId` | One activity |
+| POST | `/trips/:tripId/activities` | Add an activity |
+| PATCH | `/trips/:tripId/activities/:activityId` | Update an activity |
+| DELETE | `/trips/:tripId/activities/:activityId` | Delete an activity |
+
+### Checklist
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/trips/:TripId/checklist` | Checklist for a trip |
+| GET | `/trips/:TripId/checklist/:id` | One checklist item |
+| POST | `/trips/:TripId/checklist/post` | Add an item |
+| PATCH | `/trips/:TripId/:id/checklist/edit` | Toggle or edit an item |
+| DELETE | `/trips/:id/checklist/delete` | Delete an item |
+
+### AI and visa
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/trips/itinerary` | Generate an itinerary with Gemini |
+| POST | `/trips/visa` | Visa requirements for a passport → destination pair |
+| GET | `/trips/visa/countries` | Passport and destination country lists for the dropdowns |
+
+### Utility
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/check` | Health check — returns `{ "status": "ok" }` |
 
 ## AI Itinerary Generation
 
-The server uses the Gemini API to generate personalized travel itineraries.
-
-The frontend sends information such as:
+The frontend sends:
 
 ```json
 {
@@ -127,134 +182,146 @@ The frontend sends information such as:
   "startDate": "2026-08-15",
   "endDate": "2026-08-20",
   "budget": "1500",
-  "interests": [
-    "Food",
-    "Culture",
-    "Sightseeing"
-  ]
+  "interests": ["Food & Culinary", "Culture & History"]
 }
 ```
 
-Gemini returns structured JSON containing:
+The server works out how many days the trip covers, subtracts the final travel
+day, and asks Gemini for exactly that many days — stating the number in the
+prompt rather than leaving the model to infer it from the date range.
 
-* Trip summary
-* Activities
-* Activity dates and times
-* Activity categories
-* Estimated costs
-* Notes
-* Travel checklist
+**Long trips are capped at `MAX_ITINERARY_DAYS` (default 14).** A 45-day trip
+would need 132 activities, which one response cannot hold — the model quietly
+returns two days instead. So the server plans the first stretch and tells the
+frontend what was covered:
 
-Activity categories are restricted to:
-
-```text
-Food
-Sightseeing
-Culture
-Adventure
-Shopping
-Transportation
-Entertainment
-Other
+```jsonc
+{
+  "tripDays": 45,        // the whole trip
+  "generatedDays": 14,   // how many were planned
+  "hasMoreDays": true    // the UI shows a note when this is true
+}
 ```
 
-The Gemini response schema ensures the AI output matches the structure expected by the frontend and database.
+Measured on `gemini-3.1-flash-lite`: roughly 2s of overhead plus 0.35s per day
+(7 days ≈ 5.7s, 14 ≈ 7.6s, 20 ≈ 9.6s, 30 ≈ 15s).
+
+A `responseSchema` forces the JSON shape, so the output always matches what the
+frontend and database expect. Activity categories are restricted to:
+
+```text
+Food  Sightseeing  Culture  Adventure  Shopping  Transportation  Entertainment  Other
+```
+
+The checklist is normalized server-side — plain strings are coerced to
+`{ text, completed }` and anything without real text is dropped.
 
 ## Visa Requirements
 
-The server also connects to the Travel Buddy API to retrieve visa information.
-
-Example request:
+Visa data comes from the RapidAPI `visa-requirement` API.
 
 ```http
 POST /trips/visa
 ```
 
-Example body:
-
 ```json
-{
-  "passportCode": "US",
-  "destinationCode": "CN"
-}
+{ "passportCode": "US", "destinationCode": "CN" }
 ```
 
-The external API key is stored in:
+`GET /trips/visa/countries` returns the two lists the dropdowns need. They are
+**not the same list**: passports has ~200 entries, destinations ~212 — Bermuda,
+Hong Kong and Macau are destinations but do not issue their own passports. The
+lists are cached in memory after the first request, so page views do not spend
+API quota.
 
-```env
-VISA_API=
+### Gemini fallback
+
+The visa API has a monthly request limit. When it is exhausted (HTTP 429) or
+unreachable, the server asks Gemini instead and returns the answer in the same
+shape, tagged with its origin:
+
+```jsonc
+{ "source": "gemini", "data": { … } }   // AI-generated fallback
+{ "source": "visa-api", "data": { … } } // the visa data service
 ```
+
+The frontend must show which one it received — an AI guess about entry
+requirements is not equivalent to a licensed visa database.
 
 ## Database
 
-PostgreSQL is used to store application data.
+Sequelize manages the models and relationships:
 
-Sequelize manages the database models and relationships.
+* `User` ↔ `Trip` — many-to-many through `User_Trip`
+* `Trip` → `Activity` — one-to-many
+* `Trip` → `Checklist` — one-to-many
 
-Main application data includes:
+`Trip` stores `destination`, `date_Range` (a Postgres `DATERANGE`) and `budget`
+(`DECIMAL(10,2)`, so the maximum is 99,999,999.99).
 
-* Users
-* Trips
-* Activities
-* Checklist items
-* User-trip relationships
+### Seeding
+
+```bash
+npm run seed
+```
+
+**Warning: this drops and recreates every table.** Any accounts and trips you
+created are deleted. It refuses to run when `NODE_ENV=production`.
+
+You do not need it for normal development — `db.sync()` creates missing tables
+on boot.
 
 ## Authentication
 
-Authentication protects user-specific trip information.
+Two ways in, both resolving to the same `req.user`:
 
-Passwords are securely hashed with `bcrypt`.
+1. **Email and password** — bcrypt-hashed, issued as a JWT in an httpOnly cookie.
+2. **Auth0** — a Bearer token verified against Auth0's public key.
 
-Protected routes verify the authenticated user before allowing access to saved trips and related data.
+`requireAuth` (in `middleware/auth.js`) accepts either and protects every trip
+route.
 
 ## Development
 
-Start the server with automatic restart:
-
 ```bash
-npm run dev
+npm run dev     # nodemon, restarts on save
+npm start       # plain node, no watching
 ```
 
-Start without automatic restart:
-
-```bash
-npm start
-```
+`npm start` caches modules at boot, so edits are **not** picked up until you
+restart. If a change seems to have no effect, check which one you are running.
 
 ## Deployment
 
-For deployment:
+* Set `DATABASE_URL` to the production database.
+* Set `FRONTEND_URL` to the deployed frontend URL — exactly, with no trailing
+  slash. CORS allows one origin, so a mismatch breaks every request.
+* Add `MY_TRAVEL_BUDDY`, `VISA_API`, `JWT_SECRET`, and the Auth0 variables.
+* Set `PORT` if the host requires it.
+* **Set `NODE_ENV=production`.** Two things depend on it:
+  * the auth cookie becomes `secure` + `SameSite=None`, which a frontend on a
+    different domain needs — without it, login silently fails;
+  * Postgres SSL turns on, which hosted databases require.
+* Do not run `npm run seed` against production.
 
-* Set `DATABASE_URL` to the production PostgreSQL database.
-* Set `FRONTEND_URL` to the deployed React frontend.
-* Add the Gemini API key.
-* Add the Travel Buddy Visa API key.
-* Add the authentication secret.
-* Set `PORT` if required by the hosting provider.
-
-Never commit the `.env` file or API keys to GitHub.
+Never commit `.env` or API keys.
 
 ## Common Issues
 
-| Problem                  | Solution                                                                  |
-| ------------------------ | ------------------------------------------------------------------------- |
-| `ECONNREFUSED ... 5432`  | Make sure PostgreSQL is running and the local database exists.            |
-| Database does not exist  | Run `createdb capstone_dev`.                                              |
-| Gemini request fails     | Check `MY_TRAVEL_BUDDY` and `GEMINI_MODEL` in `.env`.                     |
-| Visa request fails       | Check the `VISA_API` environment variable.                                |
-| Port 8080 already in use | Stop the existing server process or use another port.                     |
-| Frontend cannot connect  | Confirm `FRONTEND_URL` and the frontend API URL are configured correctly. |
+| Problem | Solution |
+| --- | --- |
+| Server exits on start with "Missing …" | One of the five required variables is absent — see Environment Variables. |
+| `ECONNREFUSED … 5432` | PostgreSQL is not running, or the port in `DATABASE_URL` is wrong. |
+| Database does not exist | `createdb travel_buddy` — the name must match `DATABASE_URL`. |
+| Frontend gets "Failed to fetch" | `FRONTEND_URL` does not match the browser's origin exactly (a different port counts). |
+| Login works, then every call returns 401 | `AUTH0_AUDIENCE` and the frontend's `VITE_AUTH0_AUDIENCE` differ. |
+| Code changes have no effect | You are running `npm start`; use `npm run dev`. |
+| Gemini request fails | Check `MY_TRAVEL_BUDDY` and `GEMINI_MODEL`. |
+| Visa responses say `source: "gemini"` | The visa API quota is exhausted; the fallback is doing its job. |
+| Accounts and trips disappeared | Something ran `npm run seed`, which drops every table. |
+| Port 8080 already in use | Stop the other process or set `PORT`. |
 
 ## Client
 
-The React frontend normally runs locally at:
-
-```text
-http://localhost:5173
-```
-
-The backend normally runs locally at:
-
-```text
-http://localhost:8080
-```
+The React frontend lives in the separate **My Travel Buddy Client** repository
+and runs locally at <http://localhost:5173>.
