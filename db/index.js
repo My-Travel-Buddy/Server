@@ -6,7 +6,7 @@ const { Sequelize } = require('sequelize');
 // Local dev connects to a database on your own machine.
 // In production, your host gives you a DATABASE_URL — we read it from the
 // environment so the secret never gets committed to git.
-const LOCAL_DATABASE_NAME = 'travel_buddy'; // <-- your local db name (createdb capstone_dev)
+const LOCAL_DATABASE_NAME = 'travel_buddy'; // <-- your local db name (createdb travel_buddy)
 
 const DB_CONNECTION_URL =
   process.env.DATABASE_URL ||
