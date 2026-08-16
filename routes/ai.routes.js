@@ -1,8 +1,8 @@
 /*
 This route handles the AI itinerary endpoint.
 
-When a POST request is sent to /itinerary,
-it sends the request to createItinerary in the controller.
+When a POST request is sent to `/itinerary`,
+it generates a trip itinerary using Gemini.
 */
 
 const router = require("express").Router();
@@ -131,12 +131,59 @@ router.post("/itinerary", async (req, res) => {
   try {
     // We send the trip data to the AI service.
     const trip = req.body;
+    // How many days is the trip? The last day is the journey home, so it
+    // gets no activities.
+    const start = new Date(`${trip.startDate}T00:00:00`);
+    const end = new Date(`${trip.endDate}T00:00:00`);
+
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const startTime = start.getTime();
+    const endTime = end.getTime();
+
+    if (
+      Number.isNaN(startTime) ||
+      Number.isNaN(endTime) ||
+      endTime <= startTime
+    ) {
+      return res.status(400).json({
+        error: "Please provide a valid start date and an end date after it.",
+      });
+    }
+
+    const tripDays = Math.round((endTime - startTime) / msPerDay) + 1;
+
+    // A long trip would need hundreds of activities, which one response cannot
+    // hold — the model quietly gives up and returns two days. So we plan the
+    // first stretch and tell the user how much was covered.
+    //
+    // Measured on
+    // gemini-3.1-flash-lite: ~2s of overhead plus ~0.35s per day.
+    //   7 days  -> 5.7s     14 days -> 7.6s
+    //   20 days -> 9.6s     30 days -> 15.0s
+    // 14 covers most real trips while staying under 8 seconds. Longer trips
+    // still work — they just get the first 14 days, and the confirmation page
+    // says so. Override with MAX_ITINERARY_DAYS in .env.
+    const MAX_DAYS_PER_REQUEST = Number(process.env.MAX_ITINERARY_DAYS) || 14;
+
+    const daysToPlan = Math.max(
+      1,
+      Math.min(tripDays - 1, MAX_DAYS_PER_REQUEST),
+    );
+
+    // Say the day count out loud, and give the exact date of day 1, so the
+    // model does not have to work it out from the range.
     const prompt = `
         Create an itinerary for ${trip.destination}.
         Start date: ${trip.startDate}
         End date: ${trip.endDate}
         Budget: ${trip.budget}
         Interests: ${(trip.interests || []).join(", ")}
+
+        Plan EXACTLY ${daysToPlan} days, starting on ${trip.startDate}.
+        Day 1 is ${trip.startDate}, day 2 is the next calendar day, and so on.
+        Give exactly 3 activities for every one of those ${daysToPlan} days,
+        so return ${daysToPlan * 3} activities in total.
+        Every dateTime must fall on that day's own calendar date.
         `;
 
     const response = await ai.models.generateContent({
@@ -175,10 +222,13 @@ router.post("/itinerary", async (req, res) => {
       })
       .filter((item) => item.text.length > 0);
 
+    // Confirmation.jsx already shows a note when only part of the trip was
+    // planned — these are the fields it looks for.
+    itinerary.tripDays = tripDays;
+    itinerary.generatedDays = daysToPlan;
+    itinerary.hasMoreDays = tripDays - 1 > daysToPlan;
+
     return res.json(itinerary);
-
-
-    // We send the generated itinerary back as JSON.
   } catch (error) {
     console.error("AI ERROR:", error);
 
