@@ -3,6 +3,17 @@ require("dotenv").config();
 const { db, User, Trip, Activity, Checklist } = require("../models");
 
 async function seed() {
+  // force: true DROPS every table. That is fine for a local reset, but it
+  // would wipe real accounts and trips in production, so refuse to run there.
+  if (process.env.NODE_ENV === "production") {
+    console.error(
+      "Refusing to seed: this drops every table and NODE_ENV is production.",
+    );
+    process.exit(1);
+  }
+
+  console.log("Seeding — this DROPS and recreates every table.");
+
   await db.sync({ force: true });
 
   console.log("Database synced!");
