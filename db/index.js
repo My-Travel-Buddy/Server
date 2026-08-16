@@ -16,12 +16,14 @@ const db = new Sequelize(DB_CONNECTION_URL, {
   dialect: 'postgres',
   logging: false, // set to console.log if you want to SEE the SQL Sequelize runs
 
-  // Hosted Postgres needs SSL; local doesn't. So we only turn it on in
-  // production (when DATABASE_URL is set). rejectUnauthorized:false accepts
-  // the self-signed certificates that Render/Neon/Railway use.
-  // dialectOptions: process.env.DATABASE_URL
-  //   ? { ssl: { require: true, rejectUnauthorized: false } }
-  //   : {},
+  // Hosted Postgres (Render, Neon, Railway) requires SSL; a local database
+  // does not. This keys off NODE_ENV rather than "is DATABASE_URL set",
+  // because local dev sets DATABASE_URL too — keying off that would force
+  // SSL locally and break the connection.
+  dialectOptions:
+    process.env.NODE_ENV === 'production'
+      ? { ssl: { require: true, rejectUnauthorized: false } }
+      : {},
 });
 
 module.exports = db;
