@@ -3,7 +3,7 @@
 
 const db = require('../db');
 const Trip = require('./Trip');
-const Checklist = require("./Checklist")
+const Checklist = require("./checklist")
 const User =require("./User")
 const Activity = require("./Activity")
 // ---------- associations ----------
