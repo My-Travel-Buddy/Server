@@ -72,6 +72,13 @@ router.post("/post", requireAuth, async (req, res, next) => {
     });
     res.status(201).json(trip);
   } catch (err) {
+    // A bad budget or missing dates is the caller's mistake, not a server
+    // fault. Send 400 with the real reason so the UI can show it, instead of
+    // the generic "Something went wrong on the server".
+    if (err.name === "SequelizeValidationError") {
+      return res.status(400).json({ error: err.errors[0].message });
+    }
+
     next(err);
   }
 });

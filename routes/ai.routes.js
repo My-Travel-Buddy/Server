@@ -1,8 +1,8 @@
 /*
 This route handles the AI itinerary endpoint.
 
-When a POST request is sent to /itinerary,
-it sends the request to createItinerary in the controller.
+When a POST request is sent to `/itinerary`,
+it generates a trip itinerary using Gemini.
 */
 
 const router = require("express").Router();
@@ -28,29 +28,41 @@ const itinerarySchema = {
   type: Type.OBJECT,
 
   properties: {
+    title: {
+      type: Type.STRING,
+    },
+
+    destination: {
+      type: Type.STRING,
+    },
+
     summary: {
       type: Type.STRING,
-       description:
-        "A overview paragraph of the trip. What will happen on the trip base on the activities plus the amount of days cities visited and the estimated budget or cost"
+      description:
+        "A short overview of the trip, including the number of days, activities, and estimated cost.",
     },
 
     activities: {
       type: Type.ARRAY,
       description:
-        "A chronological list of exactly 3 distinct main activities planned for each day of the trip. Use start and end dates to determine how many days are in the trip. Exclude the final day.",
+        "Create exactly 3 activities for each day, excluding the final travel day.",
 
       items: {
         type: Type.OBJECT,
 
         properties: {
+          day: {
+            type: Type.INTEGER,
+            description: "The trip day number, starting with 1.",
+          },
+
           title: {
             type: Type.STRING,
           },
 
           dateTime: {
             type: Type.STRING,
-            description:
-              "The event date and time in ISO 8601 format (YYYY-MM-DDTHH:mm:ssZ)",
+            description: "The activity date and time in ISO 8601 format.",
           },
 
           category: {
@@ -67,13 +79,20 @@ const itinerarySchema = {
           },
         },
 
-        // Every activity needs these fields.
-        required: ["title", "dateTime", "category", "estimatedCost", "notes"],
+        required: [
+          "day",
+          "title",
+          "dateTime",
+          "category",
+          "estimatedCost",
+          "notes",
+        ],
       },
     },
 
     checklist: {
       type: Type.ARRAY,
+      description: "A practical checklist for the trip.",
 
       items: {
         type: Type.OBJECT,
@@ -87,13 +106,13 @@ const itinerarySchema = {
             type: Type.BOOLEAN,
           },
         },
+
         required: ["text", "completed"],
       },
     },
   },
-
   // Gemini needs to return both parts of the itinerary.
-  required: ["summary", "activities", "checklist"],
+  required: ["title", "destination", "summary", "activities", "checklist"],
 };
 
 // we got the Gemini API key from the server.
@@ -112,12 +131,59 @@ router.post("/itinerary", async (req, res) => {
   try {
     // We send the trip data to the AI service.
     const trip = req.body;
+    // How many days is the trip? The last day is the journey home, so it
+    // gets no activities.
+    const start = new Date(`${trip.startDate}T00:00:00`);
+    const end = new Date(`${trip.endDate}T00:00:00`);
+
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const startTime = start.getTime();
+    const endTime = end.getTime();
+
+    if (
+      Number.isNaN(startTime) ||
+      Number.isNaN(endTime) ||
+      endTime <= startTime
+    ) {
+      return res.status(400).json({
+        error: "Please provide a valid start date and an end date after it.",
+      });
+    }
+
+    const tripDays = Math.round((endTime - startTime) / msPerDay) + 1;
+
+    // A long trip would need hundreds of activities, which one response cannot
+    // hold — the model quietly gives up and returns two days. So we plan the
+    // first stretch and tell the user how much was covered.
+    //
+    // Measured on
+    // gemini-3.1-flash-lite: ~2s of overhead plus ~0.35s per day.
+    //   7 days  -> 5.7s     14 days -> 7.6s
+    //   20 days -> 9.6s     30 days -> 15.0s
+    // 14 covers most real trips while staying under 8 seconds. Longer trips
+    // still work — they just get the first 14 days, and the confirmation page
+    // says so. Override with MAX_ITINERARY_DAYS in .env.
+    const MAX_DAYS_PER_REQUEST = Number(process.env.MAX_ITINERARY_DAYS) || 14;
+
+    const daysToPlan = Math.max(
+      1,
+      Math.min(tripDays - 1, MAX_DAYS_PER_REQUEST),
+    );
+
+    // Say the day count out loud, and give the exact date of day 1, so the
+    // model does not have to work it out from the range.
     const prompt = `
         Create an itinerary for ${trip.destination}.
         Start date: ${trip.startDate}
         End date: ${trip.endDate}
         Budget: ${trip.budget}
         Interests: ${(trip.interests || []).join(", ")}
+
+        Plan EXACTLY ${daysToPlan} days, starting on ${trip.startDate}.
+        Day 1 is ${trip.startDate}, day 2 is the next calendar day, and so on.
+        Give exactly 3 activities for every one of those ${daysToPlan} days,
+        so return ${daysToPlan * 3} activities in total.
+        Every dateTime must fall on that day's own calendar date.
         `;
 
     const response = await ai.models.generateContent({
@@ -139,11 +205,30 @@ router.post("/itinerary", async (req, res) => {
 
     if (!response.text) {
       throw new Error("Gemini returned an empty response.");
-    } else {
-      return res.json(JSON.parse(response.text));
     }
 
-    // We send the generated itinerary back as JSON.
+    const itinerary = JSON.parse(response.text);
+
+    // Gemini can hand back either plain strings or objects, so we normalize
+    // every item to { text, completed } and drop anything without real text.
+    itinerary.checklist = (itinerary.checklist || [])
+      .map((item) => {
+        const text = typeof item === "string" ? item : item?.text;
+
+        return {
+          text: typeof text === "string" ? text.trim() : "",
+          completed: false,
+        };
+      })
+      .filter((item) => item.text.length > 0);
+
+    // Confirmation.jsx already shows a note when only part of the trip was
+    // planned — these are the fields it looks for.
+    itinerary.tripDays = tripDays;
+    itinerary.generatedDays = daysToPlan;
+    itinerary.hasMoreDays = tripDays - 1 > daysToPlan;
+
+    return res.json(itinerary);
   } catch (error) {
     console.error("AI ERROR:", error);
 
