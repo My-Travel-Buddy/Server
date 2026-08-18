@@ -1,60 +1,174 @@
-const express = require ('express');
-const { Activity, Trip }  = require ('../models');
+const express = require("express");
+const { Activity, Trip, User_Trip } = require("../models");
+const { requireAuth } = require("../middleware/auth");
 const router = express.Router();
 
-router.get("/:tripId/activities",async(req, res) =>{
-    const tripId = req.params.tripId;
-    const activities = await Activity.findAll({
-        where: {
-            TripId: tripId
-            }
-        }
-    );
-    res.json(activities)
-
-
-})
-
-router.get("/:tripId/activities/:activityId",async(req, res) =>{
-    const activity = await Activity.findByPk(req.params.activityId)
-    if(!activity) return res.status(404).json({error:"No activity!"});
-    res.json(activity)
-})
- router.post("/:tripId/activities", async (req, res) =>{
-    const {title, category, dateTime, estimatedCost, notes} = req.body
+router.get("/:tripId/activities", requireAuth, async (req, res) => {
+  try {
     const tripId = Number(req.params.tripId);
-    // console.log(tripId, typeof Number(tripId))
 
-    const trip = await Trip.findByPk(tripId);
-    // console.log(trip)
-    if(!trip){
-        throw new Error("Trip doesn't exist")
-     } 
+    const userTrip = await User_Trip.findOne({
+      where: {
+        UserId: req.user.id,
+        TripId: tripId,
+      },
+    });
 
-     const newActivity = await Activity.create({
-        title,
-        category,
-        dateTime,
-        estimatedCost,
-        notes,
-        TripId: trip.id
-     })
-        
-    res.status(201).json(newActivity)
- })
+    if (!userTrip) {
+      return res.status(404).json({ error: "Trip not found" });
+    }
 
- router.patch("/:tripId/activities/:activityId", async(req, res) =>{
-    const activity = await Activity.findByPk(req.params.activityId);
-    if(!activity) return res.status(404).json({error:"No activity"});
-        await activity.update(req.body);
+    const activities = await Activity.findAll({
+      where: {
+        TripId: tripId,
+      },
+    });
+
+    res.json(activities);
+  } catch (err) {
+    console.error("ACTIVITIES ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/:tripId/activities/:activityId", requireAuth, async (req, res) => {
+  try {
+    const tripId = Number(req.params.tripId);
+
+    // Activities have no UserId column — ownership comes from the trip.
+    const userTrip = await User_Trip.findOne({
+      where: {
+        UserId: req.user.id,
+        TripId: tripId,
+      },
+    });
+
+    if (!userTrip) {
+      return res.status(404).json({ error: "Trip not found" });
+    }
+
+    const activity = await Activity.findOne({
+      where: {
+        id: req.params.activityId,
+        TripId: tripId,
+      },
+    });
+
+    if (!activity) return res.status(404).json({ error: "No activity!" });
+
     res.json(activity);
+  } catch (err) {
+    console.error("GET ACTIVITY ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+router.post("/:tripId/activities", requireAuth, async (req, res) => {
+  const { title, category, dateTime, estimatedCost, notes } = req.body;
+  const tripId = Number(req.params.tripId);
+  // console.log(tripId, typeof Number(tripId))
 
- })
-  router.delete('/:tripId/activities/:activityId', async(req, res) =>{
-    const activity = await Activity.findByPk(req.params.activityId)
-    if(!activity) return res.status(404).json({error:"No activity"});
-    await activity.destroy(req.body)
-    res.sendStatus(204)
-  })
+  const trip = await Trip.findByPk(tripId)
+  // console.log(trip)
+ if (!trip) {
+  return res.status(404).json({ error: "Trip doesn't exist" });
+}
 
-  module.exports = router
+const userTrip = await User_Trip.findOne({
+  where: {
+    UserId: req.user.id,
+    TripId: tripId,
+  },
+});
+
+if (!userTrip) {
+  return res.status(403).json({ error: "You don't have access to this trip" });
+}
+  const newActivity = await Activity.create({
+    title,
+    category,
+    dateTime,
+    estimatedCost,
+    notes,
+    TripId: trip.id,
+  });
+
+  res.status(201).json(newActivity);
+});
+
+router.patch(
+  "/:tripId/activities/:activityId",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const tripId = Number(req.params.tripId);
+
+      const userTrip = await User_Trip.findOne({
+        where: {
+          UserId: req.user.id,
+          TripId: tripId,
+        },
+      });
+
+      if (!userTrip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+
+      const activity = await Activity.findOne({
+        where: {
+          id: req.params.activityId,
+          TripId: tripId,
+        },
+      });
+
+      if (!activity) return res.status(404).json({ error: "No activity" });
+
+      await activity.update(req.body);
+
+      res.json(activity);
+    } catch (err) {
+      console.error("PATCH ACTIVITY ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
+router.delete(
+  "/:tripId/activities/:activityId",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const tripId = Number(req.params.tripId);
+
+      // An Activity has no UserId of its own — it belongs to a Trip, and the
+      // Trip belongs to the user through User_Trip. So check that link first,
+      // the same way the GET and POST routes above do.
+      const userTrip = await User_Trip.findOne({
+        where: {
+          UserId: req.user.id,
+          TripId: tripId,
+        },
+      });
+
+      if (!userTrip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+
+      const activity = await Activity.findOne({
+        where: {
+          id: req.params.activityId,
+          TripId: tripId,
+        },
+      });
+
+      if (!activity) return res.status(404).json({ error: "No activity" });
+
+      await activity.destroy();
+
+      res.sendStatus(204);
+    } catch (err) {
+      console.error("DELETE ACTIVITY ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
+
+module.exports = router;
