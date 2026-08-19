@@ -15,6 +15,10 @@ const Trip = db.define("Trip", {
       },
     },
   },
+  summary:{
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
 });
 
 module.exports = Trip;
