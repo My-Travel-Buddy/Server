@@ -72,6 +72,11 @@ const itinerarySchema = {
 
           estimatedCost: {
             type: Type.NUMBER,
+            description:
+              "Cost per person in US DOLLARS. Convert from the local " +
+              "currency — without this the model answers in the " +
+              "destination's own currency (a 500 yen temple entry came " +
+              "back as 500, which the UI then printed as $500).",
           },
 
           notes: {
@@ -176,7 +181,10 @@ router.post("/itinerary", async (req, res) => {
         Create an itinerary for ${trip.destination}.
         Start date: ${trip.startDate}
         End date: ${trip.endDate}
-        Budget: ${trip.budget}
+        Budget: ${trip.budget} USD
+
+        All costs must be in US DOLLARS, converted from the local currency.
+        The activity costs should plausibly add up to within the budget.
         Interests: ${(trip.interests || []).join(", ")}
 
         Plan EXACTLY ${daysToPlan} days, starting on ${trip.startDate}.

@@ -17,8 +17,7 @@ const { requireAuth } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-const FRONTEND_URL =
-  process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // Deployed apps sit behind a proxy (Render, ...). This tells Express
 // to trust it, so rate-limiting sees the real visitor IP and secure cookies work.
