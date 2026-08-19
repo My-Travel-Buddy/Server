@@ -17,10 +17,7 @@ const { requireAuth } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-const ALLOWED_FRONTEND_URLS = [
-  process.env.FRONTEND_URL || "http://localhost:5173",
-  "http://localhost:5174",
-];
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // Deployed apps sit behind a proxy (Render, ...). This tells Express
 // to trust it, so rate-limiting sees the real visitor IP and secure cookies work.
@@ -48,7 +45,7 @@ app.use(helmet()); // sets safe HTTP headers
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ALLOWED_FRONTEND_URLS, // let your React app call this API
+    origin: FRONTEND_URL, // let your React app call this API
     credentials: true, // allow cookies (needed once you add login/auth)
   }),
 );
