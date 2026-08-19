@@ -1,62 +1,85 @@
 const express = require("express");
 const router = express.Router();
-const { requireAuth } = require("../middleware/auth");
-const { Trip, User, Checklist } = require("../models");
 
+const { requireAuth } = require("../middleware/auth");
+const { Checklist } = require("../models");
+
+// GET all checklist items for a trip
 router.get("/:TripId/checklist", requireAuth, async (req, res, next) => {
   try {
     const checklist = await Checklist.findAll({
-      where: {
-        UserId: req.user.id, ///change later
-        TripId: req.params.TripId,
-      },
-    });
-
-    if (!checklist) {
-      return res.sendStatus(404);
-    }
-
-    res.json(checklist);
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.get("/:TripId/checklist/:id", requireAuth, async (req, res, next) => {
-  try {
-    const checklist = await Checklist.findOne({
       where: {
         UserId: req.user.id,
         TripId: req.params.TripId,
       },
     });
 
+    res.status(200).json(checklist);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET one checklist item
+router.get("/:TripId/checklist/:id", requireAuth, async (req, res, next) => {
+  try {
+    const checklist = await Checklist.findOne({
+      where: {
+        id: req.params.id,
+        UserId: req.user.id,
+        TripId: req.params.TripId,
+      },
+    });
+
     if (!checklist) {
-      return res.sendStatus(404);
+      return res.status(404).json({
+        error: "Checklist item not found",
+      });
     }
 
-    res.json(checklist);
+    res.status(200).json(checklist);
   } catch (err) {
     next(err);
   }
 });
 
+// POST a new checklist item
 router.post("/:TripId/checklist/post", requireAuth, async (req, res, next) => {
   try {
+    console.log("CHECKLIST POST");
+    console.log("PARAMS:", req.params);
+    console.log("USER:", req.user);
+    console.log("BODY:", req.body);
+
     const { text, completed } = req.body;
+
+    if (!text) {
+      return res.status(400).json({
+        error: "Checklist text is required",
+      });
+    }
+
     const checklist = await Checklist.create({
       text,
-      completed,
-      TripId: req.params.TripId, // fix is giving back null
+      completed: completed ?? false,
+      TripId: Number(req.params.TripId),
       UserId: req.user.id,
     });
+
+    console.log("CREATED CHECKLIST:", checklist.toJSON());
+
     res.status(201).json(checklist);
   } catch (err) {
+    console.error("CHECKLIST POST ERROR:", err);
     next(err);
   }
 });
 
-router.patch("/:TripId/:id/checklist/edit",  requireAuth, async (req, res, next) => {
+// PATCH a checklist item
+router.patch(
+  "/:TripId/:id/checklist/edit",
+  requireAuth,
+  async (req, res, next) => {
     try {
       const checklist = await Checklist.findOne({
         where: {
@@ -72,29 +95,44 @@ router.patch("/:TripId/:id/checklist/edit",  requireAuth, async (req, res, next)
         });
       }
 
-      await checklist.update(req.body);
+      await checklist.update({
+        ...req.body,
+      });
 
       res.status(200).json(checklist);
     } catch (err) {
       next(err);
     }
-  },
+  }
 );
 
-router.delete("/:id/checklist/delete", requireAuth, async (req, res, next) => {
-  try {
-    const checklist = await Checklist.findByPk(req.params.id);
+// DELETE a checklist item
+router.delete(
+  "/:TripId/:id/checklist/delete",
+  requireAuth,
+  async (req, res, next) => {
+    try {
+      const checklist = await Checklist.findOne({
+        where: {
+          id: req.params.id,
+          UserId: req.user.id,
+          TripId: req.params.TripId,
+        },
+      });
 
-    if (!checklist) {
-      return res.sendStatus(404);
+      if (!checklist) {
+        return res.status(404).json({
+          error: "Checklist item not found",
+        });
+      }
+
+      await checklist.destroy();
+
+      res.sendStatus(204);
+    } catch (err) {
+      next(err);
     }
-
-    await checklist.destroy();
-
-    res.sendStatus(204);
-  } catch (err) {
-    next(err);
   }
-});
+);
 
 module.exports = router;
