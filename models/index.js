@@ -1,44 +1,56 @@
-// models/index.js — one place to collect all models and their relationships.
-// Lets the rest of the app grab them from here: const { Task } = require('./models')
-
 const db = require('../db');
+
 const Trip = require('./Trip');
-const Checklist = require("./checklist")
-const User =require("./User")
-const Activity = require("./Activity")
-// ---------- associations ----------
-// When you add a second model, describe how the tables relate here. Example:
-//   User.hasMany(Task)     // one user has many tasks
-//   Task.belongsTo(User)   // each task belongs to one user (adds a userId column)
+const Checklist = require('./checklist');
+const User = require('./User');
+const Activity = require('./Activity');
 
-Trip.belongsToMany(User,{
- through:"User_Trip"
-})
+// ---------- Trip <-> User ----------
 
-User.belongsToMany(Trip,{
-  through:"User_Trip"
-})
+Trip.belongsToMany(User, {
+  through: 'User_Trip'
+});
 
+User.belongsToMany(Trip, {
+  through: 'User_Trip'
+});
 
-Trip.hasMany(Activity,{
+// ---------- Trip <-> Activity ----------
 
-})
+Trip.hasMany(Activity, {
+  foreignKey: 'TripId'
+});
 
-Activity.belongsTo(Trip,{
+Activity.belongsTo(Trip, {
+  foreignKey: 'TripId'
+});
 
-})
+// ---------- Trip <-> Checklist ----------
 
-Trip.hasMany(Checklist,{
+Trip.hasMany(Checklist, {
+  foreignKey: 'TripId'
+});
 
-})
-Checklist.belongsTo(Trip,{
+Checklist.belongsTo(Trip, {
+  foreignKey: 'TripId'
+});
 
-})
+// ---------- User <-> Checklist ----------
 
-const User_Trip = db.models.User_Trip
+User.hasMany(Checklist, {
+  foreignKey: 'UserId'
+});
+
+Checklist.belongsTo(User, {
+  foreignKey: 'UserId'
+});
+
+// ---------- User_Trip ----------
+
+const User_Trip = db.models.User_Trip;
 
 module.exports = {
-  db, // exported too so seed.js can sync from one place
+  db,
   Trip,
   User,
   Checklist,
