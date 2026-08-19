@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 
 const db = require('../db');
 
-const Checklist = db.define('checklist', {
+const Checklist = db.define('Checklist', {
   text: {
     type: DataTypes.TEXT,
     allowNull: false,
@@ -23,6 +23,7 @@ const Checklist = db.define('checklist', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+   tableName: "Checklists"
 });
 
 module.exports = Checklist;
