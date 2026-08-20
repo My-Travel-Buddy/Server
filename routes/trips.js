@@ -60,12 +60,11 @@ router.get("/:id", requireAuth, async (req, res, next) => {
 
 router.post("/post", requireAuth, async (req, res, next) => {
   try {
-    const { destination, date_Range, budget, summary } = req.body;
+    const { destination, date_Range, budget } = req.body;
     const trip = await Trip.create({
       destination,
       date_Range,
       budget,
-      summary,
     });
     await User_Trip.create({
       UserId: req.user.id,
